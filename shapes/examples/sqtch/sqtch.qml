@@ -78,17 +78,76 @@ ApplicationWindow {
         }
     }
 
-    property Component mouseAreaDropped: MouseArea {
-        anchors.fill: parent
-        drag.target: parent
-//        drag.filterChildren: true
-        drag.minimumX: 0
-        drag.maximumX: dropArea.width - parent.width
-        drag.minimumY: 0
-        drag.maximumY: dropArea.height - parent.height
+    property Component mouseAreaDropped:  Item {
+        id: container
+        property QtObject comp: null
+        Loader {
+            id: loader
+            sourceComponent: comp
+            onStatusChanged: {
+                if (status === Loader.Ready) {
+                    topLeftHandle.x = loader.x
+                    topLeftHandle.y = loader.y
+                    bottomRightHandle.x = loader.x + loader.item.implicitWidth - bottomRightHandle.width
+                    bottomRightHandle.y = loader.y + loader.item.implicitHeight - bottomRightHandle.height;
+                }
+            }
+        }
+
+        function updateSize() {
+            loader.x = topLeftHandle.x
+            loader.y = topLeftHandle.y
+            loader.width = width
+            loader.height = height
+        }
+
+        onHeightChanged: updateSize()
+        onWidthChanged: updateSize()
+
+        MouseArea {
+            anchors.fill: parent
+            drag.target: parent
+            drag.minimumX: 0
+            drag.maximumX: dropArea.width - parent.width
+            drag.minimumY: 0
+            drag.maximumY: dropArea.height - parent.height
+            drag.filterChildren: true
+        }
+
+        width: Math.floor(bottomRightHandle.x - topLeftHandle.x )
+        height: Math.floor(bottomRightHandle.y - topLeftHandle.y)
+        MouseArea {
+            id: topLeftHandle
+            width: 10
+            height: 10
+            drag.target: topLeftHandle
+            drag.minimumX: 0; drag.minimumY: 0
+            drag.maximumX: bottomRightHandle.x - width
+            drag.maximumY: bottomRightHandle.y - height
+            Rectangle {
+                anchors.fill: parent
+                color: "lightsteelblue"
+                border.color: "steelblue"
+            }
+        }
+        MouseArea {
+            id: bottomRightHandle
+
+            width: 10
+            height: 10
+
+            drag.target: bottomRightHandle
+            drag.minimumX: topLeftHandle.x + width
+            drag.minimumY: topLeftHandle.y + height
+            Rectangle {
+                anchors.fill: parent
+                color: "lightsteelblue"
+                border.color: "steelblue"
+            }
+        }
     }
 
-    property Component rectProto: Rectangle { implicitWidth: width; implicitHeight: height; width: 50; height: 50; border.color: "black" }
+    property Component rectProto: Rectangle { implicitWidth: 50; implicitHeight: 50; width: implicitWidth; height: implicitHeight; border.color: "black" }
     property Component button: Button { text: "empty" }
     property Component busyIndicator: BusyIndicator {}
     property Component checkbox: CheckBox { text: "empty" }
@@ -127,17 +186,18 @@ ApplicationWindow {
                         height: loader.item.implicitHeight
                         Loader {
                             id: loader
-                            sourceComponent: component
+                            sourceComponent:  component
                         }
                         MouseArea {
                             id: dragArea
                             anchors.fill: parent
                             onPressed: {
-                                lastCreated = component.createObject(item, {"x": item.x, "y": item.y, "Drag.active": true })
+                                lastCreated = mouseAreaDropped.createObject(item, {"x": item.x, "y": item.y, "Drag.active": true })
+                                lastCreated.comp = component
                                 drag.target = lastCreated
                             }
                             drag.target: lastCreated
-//                            drag.filterChildren: true
+                            //                            drag.filterChildren: true
                             onReleased: {
                                 if (!root.acceptableDrop){
                                     lastCreated.Drag.cancel()
@@ -163,7 +223,6 @@ ApplicationWindow {
                 onDropped: {
                     console.log("dropped")
                     var count = listCreatedObjects.count
-                    var area = mouseAreaDropped.createObject(lastCreated, {"x": lastCreated.x, "y": lastCreated.y})
                     listCreatedObjects.append({ id: count, component: lastCreated, mousearea: area, x: lastCreated.x, y: lastCreated.y});
                 }
                 onEntered: {
