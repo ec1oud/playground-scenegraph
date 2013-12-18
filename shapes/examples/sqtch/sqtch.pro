@@ -1,8 +1,9 @@
 TEMPLATE = app
 TARGET = sqtch
-QT += core gui qml quick
+QT += core gui qml quick widgets
 
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    saviour.cpp
 
 APP_FILES += sqtch.qml
 
@@ -29,4 +30,7 @@ RESOURCE_CONTENT += \
 write_file($$GENERATED_RESOURCE_FILE, RESOURCE_CONTENT)|error("Aborting.")
 
 RESOURCES += $$GENERATED_RESOURCE_FILE
+
+HEADERS += \
+    saviour.h
 

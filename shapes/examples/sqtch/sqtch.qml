@@ -40,9 +40,11 @@
 
 import QtQuick 2.3
 import QtQuick.Controls 1.1
+import QtQuick.Dialogs 1.1
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.1
 import Qt.labs.shapes 1.0
+import sQtch 1.0
 
 ApplicationWindow {
     id: root
@@ -55,8 +57,24 @@ ApplicationWindow {
     property var listCreatedObjects: ListModel {}
     property bool acceptableDrop: false
 
+    Saviour { id: saviour }
+
+    FileDialog {
+        id: saveDialog
+        title: "Save as..."
+        folder: "file:///tmp"
+        selectExisting: false
+        nameFilters: [ "QML files (*.qml)" ]
+        onAccepted: {
+            console.log("save as " + fileUrl)
+            saviour.url = fileUrl
+            saviour.save(canvas)
+        }
+    }
+
     Action {
         id: revertAction
+        text: "Undo"
         shortcut: "Ctrl+Z"
         onTriggered: {
             if (!!listCreatedObjects && listCreatedObjects.count > 0) {
@@ -72,8 +90,18 @@ ApplicationWindow {
         Menu {
             title: qsTr("File")
             MenuItem {
+                text: qsTr("Save as...")
+                onTriggered: saveDialog.open()
+            }
+            MenuItem {
                 text: qsTr("Exit")
                 onTriggered: Qt.quit();
+            }
+        }
+        Menu {
+            title: qsTr("Edit")
+            MenuItem {
+                action: revertAction
             }
         }
     }
@@ -125,6 +153,7 @@ ApplicationWindow {
             drag.maximumX: bottomRightHandle.x - width
             drag.maximumY: bottomRightHandle.y - height
             Rectangle {
+                qmlName: "DragHandle"
                 anchors.fill: parent
                 color: "lightsteelblue"
                 border.color: "steelblue"
@@ -140,6 +169,7 @@ ApplicationWindow {
             drag.minimumX: topLeftHandle.x + width
             drag.minimumY: topLeftHandle.y + height
             Rectangle {
+                qmlName: "DragHandle"
                 anchors.fill: parent
                 color: "lightsteelblue"
                 border.color: "steelblue"

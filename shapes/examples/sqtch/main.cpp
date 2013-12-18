@@ -1,10 +1,12 @@
-#include <QtGui/QGuiApplication>
+#include <QtWidgets/QApplication>
 #include <QtQml>
 #include <QtQuick/QQuickWindow>
+#include "saviour.h"
 
 int main(int argc, char *argv[])
 {
-    QGuiApplication  app(argc, argv);
+    QApplication  app(argc, argv);
+    qmlRegisterType<Saviour>("sQtch", 1, 0, "Saviour");
     QQmlApplicationEngine engine(QUrl("qrc:/sqtch.qml"));
     QObject *topLevel = engine.rootObjects().value(0);
     QQuickWindow *window = qobject_cast<QQuickWindow *>(topLevel);

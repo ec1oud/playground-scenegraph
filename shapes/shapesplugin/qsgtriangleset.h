@@ -94,7 +94,7 @@ public slots:
     void finishPathConstruction();
     void simplify();
     void fitCubic();
-    void stroke(qreal width); // TODO more parameters
+    void saveQml(QTextStream &out);
 
 signals:
     void changed();

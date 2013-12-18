@@ -333,12 +333,33 @@ void QSGTriangleSet::fitCubic()
     qDebug() << Q_FUNC_INFO << "before" << pathElementCount << "after" << m_path.elementCount();
 }
 
-void QSGTriangleSet::stroke(qreal width)
+void QSGTriangleSet::saveQml(QTextStream &out)
 {
-//qDebug() << Q_FUNC_INFO << "is closed?" << m_path
-    QPainterPathStroker s;
-    s.setWidth(width);
-//    s.setCurveThreshold(0.7);
-    m_path = s.createStroke(m_path);
+    out << "TriangleSet {\n";
+    out << "    Component.onCompleted: {\n";
+    out << "        beginPathConstruction()\n";
+    int cubicBegin = -1;
+    for (int i = 0; i < m_path.elementCount(); ++i) {
+        const QPainterPath::Element &e = m_path.elementAt(i);
+        switch (e.type) {
+        case QPainterPath::MoveToElement:
+            out << "        moveTo(" << e.x << ", " << e.y << ")\n";
+            break;
+        case QPainterPath::LineToElement:
+            out << "        lineTo(" << e.x << ", " << e.y << ")\n";
+            break;
+        case QPainterPath::CurveToElement:
+            cubicBegin = i;
+            out << "        cubicTo(" << e.x << ", " << e.y;
+            break;
+        case QPainterPath::CurveToDataElement:
+            out << ", " << e.x << ", " << e.y;
+            if (i - 2 == cubicBegin)
+                out << ")\n";
+            break;
+        }
+    }
+    out << "        finishPathConstruction()\n";
+    out << "    }\n";
+    out << "}\n";
 }
-

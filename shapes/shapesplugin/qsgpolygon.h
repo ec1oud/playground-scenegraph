@@ -68,6 +68,8 @@ signals:
 public slots:
     void setTriangleSet(QSGTriangleSet *set);
     void setColor(const QColor &color);
+    void changed();
+    virtual void saveQml(QTextStream &out, QPointF offset = QPointF());
 
 private:
     QSGTriangleSet *m_triangleSet;

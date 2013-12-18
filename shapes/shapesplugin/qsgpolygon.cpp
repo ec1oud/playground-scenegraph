@@ -40,6 +40,8 @@
 ****************************************************************************/
 
 #include "qsgpolygon.h"
+#include <QtCore/private/qobject_p.h>
+#include <QtQuick/private/qquickitem_p.h>
 
 #include <QtQuick/qsgnode.h>
 #include <QtQuick/qsgflatcolormaterial.h>
@@ -67,6 +69,7 @@ QSGPolygon::QSGPolygon()
     , m_colorWasChanged(false)
     , m_triangleSetWasChanged(false)
 {
+    static_cast<QQuickItemPrivate*>(QObjectPrivate::get(this))->m_qmlName = "Polygon";
     setFlag(ItemHasContents, true);
 }
 
@@ -86,6 +89,26 @@ void QSGPolygon::setTriangleSet(QSGTriangleSet *set)
     update();
 }
 
+void QSGPolygon::changed()
+{
+    m_triangleSetWasChanged = true;
+    update();
+}
+
+void QSGPolygon::saveQml(QTextStream &out, QPointF offset)
+{
+    QQuickItemPrivate* d = static_cast<QQuickItemPrivate*>(QObjectPrivate::get(this));
+    out << "Polygon {\n";
+    d->saveQmlProperty(out, "x");
+    d->saveQmlProperty(out, "y");
+    d->saveQmlProperty(out, "width");
+    d->saveQmlProperty(out, "height");
+    d->saveQmlProperty(out, "color");
+    out << "triangleSet: ";
+    triangleSet()->saveQml(out);
+    out << "}\n";
+}
+
 void QSGPolygon::setColor(const QColor &color)
 {
     if (color == m_color)
@@ -102,7 +125,7 @@ QSGNode *QSGPolygon::updatePaintNode(QSGNode *old, UpdatePaintNodeData *)
 {
     QSGPolygonNode *n = static_cast<QSGPolygonNode *>(old);
 
-    if (m_triangleSet == 0 || !m_triangleSet->isValid() || !m_color.isValid() || m_color.alpha() == 0) {
+    if (n && m_triangleSet == 0 || !m_triangleSet->isValid() || !m_color.isValid() || m_color.alpha() == 0) {
         delete n;
         return 0;
     }
