@@ -89,6 +89,8 @@ public slots:
     void closeSubpath();
     void clipToRect(qreal x, qreal y, qreal width, qreal height);
     void finishPathConstruction();
+    void simplify();
+    void stroke(qreal width); // TODO more parameters
 
 signals:
     void changed();

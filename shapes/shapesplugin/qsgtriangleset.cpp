@@ -263,7 +263,12 @@ void QSGTriangleSet::finishPathConstruction()
 {
     qreal scale = 100;
 
-    QTriangleSet ts = qTriangulate(m_path, QTransform::fromScale(scale, scale));
+    QPainterPathStroker s;
+    s.setWidth(2.0);
+    // TODO don't do this unless configured to do it; but there are so many parameters...
+    // Ideally one QTriangleSet could generate both the triangulated fill area and the stroke,
+    // then QSGPolygon would be configured to render one or both, with all the typical pen parameters.
+    QTriangleSet ts = qTriangulate(s.createStroke(m_path), QTransform::fromScale(scale, scale));
 
     m_mode = GL_TRIANGLES;
 
@@ -298,5 +303,21 @@ void QSGTriangleSet::finishPathConstruction()
 
     emit changed();
 
+}
+
+void QSGTriangleSet::simplify()
+{
+int b = m_path.elementCount();
+    m_path = m_path.simplified();
+    qDebug() << Q_FUNC_INFO << "before" << b << "after" << m_path.elementCount();
+}
+
+void QSGTriangleSet::stroke(qreal width)
+{
+//qDebug() << Q_FUNC_INFO << "is closed?" << m_path
+    QPainterPathStroker s;
+    s.setWidth(width);
+//    s.setCurveThreshold(0.7);
+    m_path = s.createStroke(m_path);
 }
 
