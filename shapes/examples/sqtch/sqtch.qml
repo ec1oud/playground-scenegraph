@@ -45,10 +45,28 @@ import QtQuick.Window 2.1
 import Qt.labs.shapes 1.0
 
 ApplicationWindow {
+    id: root
     visible: true
     title: qsTr("sQtch")
     width: 1000
     height: 800
+
+    property QtObject lastCreated: null
+    property var listCreatedObjects: ListModel {}
+    property bool acceptableDrop: false
+
+    Action {
+        id: revertAction
+        shortcut: "Ctrl+Z"
+        onTriggered: {
+            if (!!listCreatedObjects && listCreatedObjects.count > 0) {
+                var object = listCreatedObjects.get(listCreatedObjects.count-1)
+                object.component.destroy()
+                object.area.destroy()
+                listCreatedObjects.remove(listCreatedObjects.count-1)
+            }
+        }
+    }
 
     menuBar: MenuBar {
         Menu {
@@ -60,24 +78,79 @@ ApplicationWindow {
         }
     }
 
-    SplitView {
+    property Component mouseAreaDropped: MouseArea {
         anchors.fill: parent
-        orientation: Qt.Horizontal
-        Rectangle {
-            id: palette
-            width: 100
+        drag.target: parent
+//        drag.filterChildren: true
+        drag.minimumX: 0
+        drag.maximumX: dropArea.width - parent.width
+        drag.minimumY: 0
+        drag.maximumY: dropArea.height - parent.height
+    }
 
-            Rectangle {
-                id: rectShape
-                width: 50
-                height: 50
-                z: 10
-                border.color: "black"
-                Drag.active: dragArea.drag.active
-                MouseArea {
-                    id: dragArea
-                    drag.target: rectShape
-                    anchors.fill: parent
+    property Component rectProto: Rectangle { implicitWidth: width; implicitHeight: height; width: 50; height: 50; border.color: "black" }
+    property Component button: Button { text: "empty" }
+    property Component busyIndicator: BusyIndicator {}
+    property Component checkbox: CheckBox { text: "empty" }
+    property Component combobox: ComboBox { width: 50 }
+
+    property var componentModel: ListModel {
+        Component.onCompleted: {
+            append({ name: "Rectangle",     component: rectProto});
+            append({ name: "Button",        component: button});
+            append({ name: "BusyIndicator", component: busyIndicator});
+            append({ name: "CheckBox",      component: checkbox});
+            append({ name: "ComboBox",      component: combobox});
+        }
+    }
+
+    SplitView {
+        id: splitView
+        anchors.fill: parent
+
+        Item {
+            width: 100
+            ListView {
+                id: listview
+                anchors.fill: parent
+                anchors.margins: 10
+                model: componentModel
+                delegate:  ColumnLayout {
+                    id: column
+                    Label {
+                        text: name
+                        font.bold: true
+                    }
+                    Item {
+                        id: item
+                        width: loader.item.implicitWidth
+                        height: loader.item.implicitHeight
+                        Loader {
+                            id: loader
+                            sourceComponent: component
+                        }
+                        MouseArea {
+                            id: dragArea
+                            anchors.fill: parent
+                            onPressed: {
+                                lastCreated = component.createObject(item, {"x": item.x, "y": item.y, "Drag.active": true })
+                                drag.target = lastCreated
+                            }
+                            drag.target: lastCreated
+//                            drag.filterChildren: true
+                            onReleased: {
+                                if (!root.acceptableDrop){
+                                    lastCreated.Drag.cancel()
+                                    lastCreated.destroy()
+                                }else {
+                                    lastCreated.Drag.drop()
+                                }
+                            }
+                        }
+                        Item {
+                            Layout.preferredHeight: 20
+                        }
+                    }
                 }
             }
         }
@@ -85,11 +158,31 @@ ApplicationWindow {
             id: drawingPane
             Layout.fillWidth: true
             DropArea {
-                // children of this will all be persisted
-                id: canvas
+                id: dropArea
                 anchors.fill: parent
+                onDropped: {
+                    console.log("dropped")
+                    var count = listCreatedObjects.count
+                    var area = mouseAreaDropped.createObject(lastCreated, {"x": lastCreated.x, "y": lastCreated.y})
+                    listCreatedObjects.append({ id: count, component: lastCreated, mousearea: area, x: lastCreated.x, y: lastCreated.y});
+                }
+                onEntered: {
+                    lastCreated.parent = canvas
+                    acceptableDrop = true
+                }
+                onExited: {
+                    acceptableDrop = false
+                }
+                Rectangle {
+                    id: canvas
+                    z: -2
+                    anchors.fill: parent
+                    color: parent.containsDrag ?"green": "lightblue"
+                    opacity: parent.containsDrag ? 0.5 : 1
+                }
             }
             TabletSketchArea {
+                z: 1000
                 Component {
                     id: polySketchProto
 
@@ -104,7 +197,7 @@ ApplicationWindow {
 
                 onPressed: {
                     poly = polySketchProto.createObject(canvas,
-                        {"x": 0, "y": 0, "width": canvas.width, "height": canvas.height})
+                                                        {"x": 0, "y": 0, "width": canvas.width, "height": canvas.height})
                     poly.triangleSet.beginPathConstruction()
                     poly.triangleSet.moveTo(stylus.x, stylus.y)
                 }
@@ -119,6 +212,19 @@ ApplicationWindow {
                     poly.triangleSet.fitCubic()
                     poly.triangleSet.finishPathConstruction()
                 }
+            }
+        }
+    }
+    statusBar: StatusBar {
+        RowLayout {
+            anchors.fill: parent
+            Label {
+                Layout.preferredWidth: 100
+                text: "dragx: " + dropArea.drag.x
+            }
+            Label {
+                Layout.preferredWidth: 100
+                text: "dragy: " + dropArea.drag.y
             }
         }
     }
