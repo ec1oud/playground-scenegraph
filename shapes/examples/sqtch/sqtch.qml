@@ -137,42 +137,80 @@ ApplicationWindow {
 
     property Component mouseAreaDropped:  Item {
         id: container
-        property QtObject comp: null
-        Loader {
-            id: loader
-            sourceComponent: comp
-            onStatusChanged: {
-                if (status === Loader.Ready) {
-                    topLeftHandle.x = loader.x
-                    topLeftHandle.y = loader.y
-                    bottomRightHandle.x = loader.x + loader.item.implicitWidth - bottomRightHandle.width
-                    bottomRightHandle.y = loader.y + loader.item.implicitHeight - bottomRightHandle.height;
-                }
+        property QtObject comp
+
+        property bool initialUpdate: true
+
+        Component.onCompleted: {
+            if (initialUpdate) {
+                container.width = comp.implicitWidth
+                container.height = comp.implicitHeight
+                container.x = comp.x
+                container.y = comp.y
+                bottomRightHandle.x = container.width - bottomRightHandle.height
+                bottomRightHandle.y = container.height - bottomRightHandle.height
+                initialUpdate = false
             }
         }
 
-        function updateSize() {
-            loader.x = topLeftHandle.x
-            loader.y = topLeftHandle.y
-            loader.width = width
-            loader.height = height
-        }
-
-        onHeightChanged: updateSize()
-        onWidthChanged: updateSize()
-
         MouseArea {
+            id: mousearea
             anchors.fill: parent
             drag.target: parent
+            hoverEnabled: true
             drag.minimumX: 0
             drag.maximumX: dropArea.width - parent.width
             drag.minimumY: 0
             drag.maximumY: dropArea.height - parent.height
             drag.filterChildren: true
+
+            Rectangle {
+                anchors.fill: parent
+                opacity: mousearea.containsMouse ? 0.5 : 0
+                color: "red"
+            }
         }
 
-        width: Math.floor(bottomRightHandle.x - topLeftHandle.x )
-        height: Math.floor(bottomRightHandle.y - topLeftHandle.y)
+        Binding {
+            target: container
+            property: "width"
+            value: Math.floor(bottomRightHandle.x + bottomRightHandle.height - topLeftHandle.x)
+        }
+
+        Binding {
+            target: container
+            property: "height"
+            value: Math.floor(bottomRightHandle.y + bottomRightHandle.height - topLeftHandle.y)
+        }
+
+        Binding {
+            target: comp
+            property: "width"
+            value: Math.floor(bottomRightHandle.x + bottomRightHandle.height - topLeftHandle.x)
+            when: !initialUpdate
+        }
+
+        Binding {
+            target: comp
+            property: "height"
+            value: Math.floor(bottomRightHandle.y + bottomRightHandle.height - topLeftHandle.y)
+            when: !initialUpdate
+        }
+
+        Binding {
+            target: comp
+            property: "x"
+            value: container.x
+            when: !initialUpdate
+        }
+
+        Binding {
+            target: comp
+            property: "y"
+            value: container.y
+            when: !initialUpdate
+        }
+
         MouseArea {
             id: topLeftHandle
             width: 10
@@ -182,26 +220,22 @@ ApplicationWindow {
             drag.maximumX: bottomRightHandle.x - width
             drag.maximumY: bottomRightHandle.y - height
             Rectangle {
-                qmlName: "DragHandle"
                 anchors.fill: parent
-                color: "lightsteelblue"
-                border.color: "steelblue"
+                opacity: mousearea.containsMouse ? 1 : 0
+                border.color: "gray"
             }
         }
         MouseArea {
             id: bottomRightHandle
-
             width: 10
             height: 10
-
             drag.target: bottomRightHandle
             drag.minimumX: topLeftHandle.x + width
             drag.minimumY: topLeftHandle.y + height
             Rectangle {
-                qmlName: "DragHandle"
                 anchors.fill: parent
-                color: "lightsteelblue"
-                border.color: "steelblue"
+                opacity: mousearea.containsMouse ? 1 : 0
+                border.color: "gray"
             }
         }
     }
@@ -214,6 +248,7 @@ ApplicationWindow {
         border.color: strokeColor
         color: fillColor
     }
+
     property Component button: Button { text: "empty" }
     property Component busyIndicator: BusyIndicator {}
     property Component checkbox: CheckBox { text: "empty" }
@@ -267,7 +302,6 @@ ApplicationWindow {
                                 drag.target = lastCreated
                             }
                             drag.target: lastCreated
-                            //                            drag.filterChildren: true
                             onReleased: {
                                 if (!root.acceptableDrop){
                                     lastCreated.Drag.cancel()
@@ -291,8 +325,8 @@ ApplicationWindow {
                 id: dropArea
                 anchors.fill: parent
                 onDropped: {
-                    console.log("dropped")
                     var count = listCreatedObjects.count
+                    var area = mouseAreaDropped.createObject(dropArea, {"comp":lastCreated} )
                     listCreatedObjects.append({ id: count, component: lastCreated, mousearea: area, x: lastCreated.x, y: lastCreated.y});
                 }
                 onEntered: {
