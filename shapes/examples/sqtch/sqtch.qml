@@ -116,6 +116,7 @@ ApplicationWindow {
                 }
                 onReleased: {
                     poly.triangleSet.lineTo(stylus.x, stylus.y)
+                    poly.triangleSet.fitCubic()
                     poly.triangleSet.finishPathConstruction()
                 }
             }

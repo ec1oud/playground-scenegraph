@@ -52,6 +52,8 @@
 
 #include <private/qtriangulator_p.h>
 
+#include "qwt/qwt_curve_fitter.h"
+
 // #define QSGTRIANGLESET_DEBUG
 
 QSGTriangleSet::QSGTriangleSet()
@@ -310,6 +312,25 @@ void QSGTriangleSet::simplify()
 int b = m_path.elementCount();
     m_path = m_path.simplified();
     qDebug() << Q_FUNC_INFO << "before" << b << "after" << m_path.elementCount();
+}
+
+void QSGTriangleSet::fitCubic()
+{
+    int pathElementCount = m_path.elementCount();
+    // TODO some real shape recognition
+    // For now we just simplify paths with lots of points down to bezier segments with fewer points
+    // (so, you will have a hard time drawing straight lines and sharp corners)
+    if (pathElementCount > 3) {
+        QwtSplineCurveFitter cf;
+        cf.setFitMode(QwtSplineCurveFitter::ParametricSpline);
+        cf.setSplineSize(qMax(4, pathElementCount / 6));
+        QPolygonF c = cf.fitCurve(m_path.toFillPolygon(QTransform()));
+        m_path = QPainterPath();
+        m_path.moveTo(c[0]);
+        for (int i = 1; i < c.count() - 3; i += 3)
+            m_path.cubicTo(c[i], c[i + 1], c[i + 2]);
+    }
+    qDebug() << Q_FUNC_INFO << "before" << pathElementCount << "after" << m_path.elementCount();
 }
 
 void QSGTriangleSet::stroke(qreal width)

@@ -54,6 +54,7 @@ class QSGTriangleSet : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int drawingMode READ drawingMode WRITE setDrawingMode NOTIFY changed)
+    Q_PROPERTY(int pathElementCount READ pathElementCount NOTIFY changed)
 
 public:
     enum VertexType {
@@ -73,6 +74,8 @@ public:
 
     bool isValid() const { return m_indices.size() > 0 && m_vertices.size() > 0; }
 
+    int pathElementCount() const { return m_path.elementCount(); }
+
 public slots:
     QString readFile(const QUrl &name);
     QString saveFile(const QUrl &name);
@@ -90,6 +93,7 @@ public slots:
     void clipToRect(qreal x, qreal y, qreal width, qreal height);
     void finishPathConstruction();
     void simplify();
+    void fitCubic();
     void stroke(qreal width); // TODO more parameters
 
 signals:
