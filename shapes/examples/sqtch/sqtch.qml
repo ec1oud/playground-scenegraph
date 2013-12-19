@@ -54,6 +54,7 @@ ApplicationWindow {
     height: 800
 
     property QtObject lastCreated: null
+    property Item selectedItem: null
     property var listCreatedObjects: ListModel {}
     property bool acceptableDrop: false
 
@@ -80,13 +81,16 @@ ApplicationWindow {
         onTriggered: {
             if (!!listCreatedObjects && listCreatedObjects.count > 0) {
                 var object = listCreatedObjects.get(listCreatedObjects.count-1)
-                object.component.destroy()
-                object.area.destroy()
+                if (object.component)
+                    object.component.destroy()
+                if (object.area)
+                    object.area.destroy()
                 listCreatedObjects.remove(listCreatedObjects.count-1)
             }
         }
     }
 
+    property color strokeColor: "brown"
     Action {
         id: strokeAction
         text: "Stroke color"
@@ -94,9 +98,19 @@ ApplicationWindow {
         onTriggered: strokeColorDialog.open()
     }
 
-    ColorDialog { id: strokeColorDialog; color: "brown" }
-    property alias strokeColor: strokeColorDialog.color
+    ColorDialog {
+        id: strokeColorDialog
+        onAccepted: {
+            if (selectedItem && selectedItem.hasOwnProperty("border"))
+                selectedItem.border.color = strokeColorDialog.currentColor
+            else if (selectedItem && selectedItem.hasOwnProperty("color"))
+                selectedItem.color = strokeColorDialog.currentColor
+            else
+                strokeColor = strokeColorDialog.currentColor
+        }
+    }
 
+    property color fillColor: "beige"
     Action {
         id: fillAction
         text: "Fill color"
@@ -104,8 +118,21 @@ ApplicationWindow {
         onTriggered: fillColorDialog.open()
     }
 
-    ColorDialog { id: fillColorDialog; color: "beige" }
-    property alias fillColor: fillColorDialog.color
+    ColorDialog {
+        id: fillColorDialog
+        onAccepted: {
+            console.log(selectedItem + " accepted fill color " + color + fillColorDialog.color)
+            if (selectedItem && selectedItem.hasOwnProperty("color"))
+                selectedItem.color = fillColorDialog.currentColor
+            else
+                fillColor = fillColorDialog.currentColor
+        }
+    }
+
+    onSelectedItemChanged: if (selectedItem) {
+        if (selectedItem.hasOwnProperty("color"))
+            fillColorDialog.color = selectedItem.color
+    }
 
     menuBar: MenuBar {
         Menu {
@@ -121,9 +148,9 @@ ApplicationWindow {
         }
         Menu {
             title: qsTr("Edit")
-            MenuItem {
-                action: revertAction
-            }
+            MenuItem { action: revertAction }
+            MenuItem { action: strokeAction }
+            MenuItem { action: fillAction }
         }
     }
 
@@ -140,6 +167,7 @@ ApplicationWindow {
         property QtObject comp
 
         property bool initialUpdate: true
+        property bool selected: comp == root.selectedItem
 
         Component.onCompleted: {
             if (initialUpdate) {
@@ -164,9 +192,11 @@ ApplicationWindow {
             drag.maximumY: dropArea.height - parent.height
             drag.filterChildren: true
 
+            onClicked: root.selectedItem = comp
+
             Rectangle {
                 anchors.fill: parent
-                opacity: mousearea.containsMouse ? 0.5 : 0
+                opacity: selected ? 0.5 : 0
                 color: "red"
             }
         }
@@ -221,7 +251,7 @@ ApplicationWindow {
             drag.maximumY: bottomRightHandle.y - height
             Rectangle {
                 anchors.fill: parent
-                opacity: mousearea.containsMouse ? 1 : 0
+                visible: container.selected
                 border.color: "gray"
             }
         }
@@ -234,7 +264,7 @@ ApplicationWindow {
             drag.minimumY: topLeftHandle.y + height
             Rectangle {
                 anchors.fill: parent
-                opacity: mousearea.containsMouse ? 1 : 0
+                visible: container.selected
                 border.color: "gray"
             }
         }
@@ -245,8 +275,8 @@ ApplicationWindow {
         implicitHeight: 50
         width: implicitWidth
         height: implicitHeight
-        border.color: strokeColor
-        color: fillColor
+        border.color: root.strokeColor
+        color: root.fillColor
     }
 
     property Component button: Button { text: "empty" }
@@ -297,8 +327,7 @@ ApplicationWindow {
                             id: dragArea
                             anchors.fill: parent
                             onPressed: {
-                                lastCreated = mouseAreaDropped.createObject(item, {"x": item.x, "y": item.y, "Drag.active": true })
-                                lastCreated.comp = component
+                                lastCreated = component.createObject(item, {"x": item.x, "y": item.y, "Drag.active": true })
                                 drag.target = lastCreated
                             }
                             drag.target: lastCreated
@@ -327,6 +356,10 @@ ApplicationWindow {
                 onDropped: {
                     var count = listCreatedObjects.count
                     var area = mouseAreaDropped.createObject(dropArea, {"comp":lastCreated} )
+                    if (lastCreated.qmlName == "Rectangle") {
+                        lastCreated.color = fillColor
+                        lastCreated.border.color = strokeColor
+                    }
                     listCreatedObjects.append({ id: count, component: lastCreated, mousearea: area, x: lastCreated.x, y: lastCreated.y});
                 }
                 onEntered: {
@@ -336,6 +369,11 @@ ApplicationWindow {
                 onExited: {
                     acceptableDrop = false
                 }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: selectedItem = null
+                }
+
                 Rectangle {
                     id: canvas
                     z: -2
@@ -383,7 +421,7 @@ ApplicationWindow {
                             {"item1": pressedOver, z: -10})
                     } else {
                         poly = polySketchProto.createObject(canvas,
-                            {"x": 0, "y": 0, z: -10, "width": canvas.width, "height": canvas.height})
+                            {"x": 0, "y": 0, z: -10, "width": canvas.width, "height": canvas.height, "color": strokeColor})
                         poly.triangleSet.beginPathConstruction()
                         poly.triangleSet.moveTo(stylus.x, stylus.y)
                     }
@@ -428,6 +466,10 @@ ApplicationWindow {
                         poly.triangleSet.lineTo(stylus.x, stylus.y)
                         poly.triangleSet.fitCubic()
                         poly.triangleSet.finishPathConstruction()
+                        poly.implicitWidth = 50
+                        poly.implicitHeight = 50
+                        var area = mouseAreaDropped.createObject(dropArea, {"comp":poly} )
+                        console.log("made dragger area " + area + " parent " + area.parent)
                     }
                     pressedOver = false
                 }
@@ -435,15 +477,13 @@ ApplicationWindow {
         }
     }
     statusBar: StatusBar {
-        RowLayout {
+        Row {
             anchors.fill: parent
+            visible: dropArea.containsDrag
+            spacing: 10
             Label {
                 Layout.preferredWidth: 100
-                text: "dragx: " + dropArea.drag.x
-            }
-            Label {
-                Layout.preferredWidth: 100
-                text: "dragy: " + dropArea.drag.y
+                text: "drag to " + dropArea.drag.x + ", " + dropArea.drag.y
             }
         }
     }

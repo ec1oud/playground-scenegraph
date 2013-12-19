@@ -69,6 +69,7 @@ public slots:
     void setTriangleSet(QSGTriangleSet *set);
     void setColor(const QColor &color);
     void changed();
+    void shrinkToFit();
     virtual void saveQml(QTextStream &out, QPointF offset = QPointF());
 
 private:
