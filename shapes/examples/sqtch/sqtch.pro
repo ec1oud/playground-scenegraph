@@ -3,11 +3,13 @@ TARGET = sqtch
 QT += core gui qml quick widgets svg
 
 SOURCES += main.cpp \
-    saviour.cpp
+    saviour.cpp \
+    bezierconnector.cpp
 
 APP_FILES += sqtch.qml
 
-OTHER_FILES = $$APP_FILES
+OTHER_FILES = $$APP_FILES \
+    LineConnector.qml
 
 # Create the resource file
 GENERATED_RESOURCE_FILE = $$OUT_PWD/sqtch.qrc
@@ -33,5 +35,5 @@ RESOURCES += $$GENERATED_RESOURCE_FILE resources/resources.qrc \
     resources/resources.qrc
 
 HEADERS += \
-    saviour.h
-
+    saviour.h \
+    bezierconnector.h

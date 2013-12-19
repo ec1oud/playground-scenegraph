@@ -320,9 +320,15 @@ ApplicationWindow {
                         triangleSet: TriangleSet { }
                     }
                 }
+                Component {
+                    id: bezierConnectorProto
+
+                    BezierConnector { }
+                }
 
                 anchors.fill: parent
                 property Polygon poly
+                property var connector
                 property var pressedOver: false
                 property real pressedX
                 property real pressedY
@@ -339,10 +345,8 @@ ApplicationWindow {
                     pressedY = stylus.y
                     console.log("pressed over " + pressedOver)
                     if (pressedOver) {
-                        poly = polySketchProto.createObject(canvas,
-                            {"x": 0, "y": 0, z: -10, "width": canvas.width, "height": canvas.height})
-                        poly.triangleSet.beginPathConstruction()
-                        poly.triangleSet.moveTo(pressedX, pressedY)
+                        connector = bezierConnectorProto.createObject(canvas,
+                            {"item1": pressedOver, z: -10})
                     } else {
                         poly = polySketchProto.createObject(canvas,
                             {"x": 0, "y": 0, z: -10, "width": canvas.width, "height": canvas.height})
@@ -352,10 +356,12 @@ ApplicationWindow {
                 }
                 onDragged: {
                     if (pressedOver) {
-                        poly.triangleSet.beginPathConstruction()
-                        poly.triangleSet.moveTo(pressedX, pressedY)
-                        poly.triangleSet.lineTo(stylus.x, stylus.y)
-                        poly.triangleSet.finishPathConstruction()
+                        connector.width = stylus.x - pressedX
+                        connector.height = stylus.y - pressedY
+//                        connector.p3.x = stylus.x
+//                        connector.p3.y = stylus.y
+//                        connector.p4.x = stylus.x
+//                        connector.p4.y = stylus.y
                     } else {
                         poly.triangleSet.lineTo(stylus.x, stylus.y)
                         // finishPathConstruction is a bit expensive because of stroking, so do it less often
@@ -366,10 +372,24 @@ ApplicationWindow {
                 onReleased: {
                     console.log("released")
                     if (pressedOver) {
-                        poly.triangleSet.beginPathConstruction()
-                        poly.triangleSet.moveTo(pressedX, pressedY)
-                        poly.triangleSet.lineTo(stylus.x, stylus.y)
-                        poly.triangleSet.finishPathConstruction()
+                        var releasedOver = false
+                        for (var i = 0; i < canvas.children.length && !releasedOver; ++i) {
+                            var coords = canvas.children[i].mapFromItem(canvas, stylus.x, stylus.y);
+    //                        console.log("looking at " + canvas.children[i] + " translated stylus coords " + coords.x + "," + coords.y)
+                            if (!canvas.children[i].hasOwnProperty("triangleSet"))
+                                if (coords.x > 0 && coords.x < canvas.children[i].width && coords.y > 0 && coords.y < canvas.children[i].height)
+                                    releasedOver = canvas.children[i];
+                        }
+                        if (releasedOver)
+                            connector.item2 = releasedOver;
+                        else {
+                            connector.width = stylus.x - pressedX
+                            connector.height = stylus.y - pressedY
+//                            connector.p3.x = stylus.x
+//                            connector.p3.y = stylus.y
+//                            connector.p4.x = stylus.x
+//                            connector.p4.y = stylus.y
+                        }
                     } else {
                         poly.triangleSet.lineTo(stylus.x, stylus.y)
                         poly.triangleSet.fitCubic()
