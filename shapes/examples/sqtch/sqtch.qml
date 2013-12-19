@@ -76,6 +76,7 @@ ApplicationWindow {
         id: revertAction
         text: "Undo"
         shortcut: "Ctrl+Z"
+        iconSource: "qrc:/resources/edit-undo.png"
         onTriggered: {
             if (!!listCreatedObjects && listCreatedObjects.count > 0) {
                 var object = listCreatedObjects.get(listCreatedObjects.count-1)
@@ -85,6 +86,26 @@ ApplicationWindow {
             }
         }
     }
+
+    Action {
+        id: strokeAction
+        text: "Stroke color"
+        iconSource: "qrc:/resources/icon-stroke.png"
+        onTriggered: strokeColorDialog.open()
+    }
+
+    ColorDialog { id: strokeColorDialog; color: "brown" }
+    property alias strokeColor: strokeColorDialog.color
+
+    Action {
+        id: fillAction
+        text: "Fill color"
+        iconSource: "qrc:/resources/icon-fill.png"
+        onTriggered: fillColorDialog.open()
+    }
+
+    ColorDialog { id: fillColorDialog; color: "beige" }
+    property alias fillColor: fillColorDialog.color
 
     menuBar: MenuBar {
         Menu {
@@ -103,6 +124,14 @@ ApplicationWindow {
             MenuItem {
                 action: revertAction
             }
+        }
+    }
+
+    toolBar: ToolBar {
+        RowLayout {
+            ToolButton { action: revertAction }
+            ToolButton { action: strokeAction }
+            ToolButton { action: fillAction }
         }
     }
 
@@ -177,7 +206,14 @@ ApplicationWindow {
         }
     }
 
-    property Component rectProto: Rectangle { implicitWidth: 50; implicitHeight: 50; width: implicitWidth; height: implicitHeight; border.color: "black" }
+    property Component rectProto: Rectangle {
+        implicitWidth: 50
+        implicitHeight: 50
+        width: implicitWidth
+        height: implicitHeight
+        border.color: strokeColor
+        color: fillColor
+    }
     property Component button: Button { text: "empty" }
     property Component busyIndicator: BusyIndicator {}
     property Component checkbox: CheckBox { text: "empty" }
@@ -198,22 +234,26 @@ ApplicationWindow {
         anchors.fill: parent
 
         Item {
-            width: 100
+            width: 180
             ListView {
                 id: listview
                 anchors.fill: parent
                 anchors.margins: 10
                 model: componentModel
+                spacing: 20
                 delegate:  ColumnLayout {
                     id: column
+                    width: listview.width
                     Label {
                         text: name
                         font.bold: true
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
                     Item {
                         id: item
                         width: loader.item.implicitWidth
                         height: loader.item.implicitHeight
+                        anchors.horizontalCenter: parent.horizontalCenter
                         Loader {
                             id: loader
                             sourceComponent:  component
@@ -266,7 +306,7 @@ ApplicationWindow {
                     id: canvas
                     z: -2
                     anchors.fill: parent
-                    color: parent.containsDrag ?"green": "lightblue"
+                    color: parent.containsDrag ?"green": "transparent"
                     opacity: parent.containsDrag ? 0.5 : 1
                 }
             }

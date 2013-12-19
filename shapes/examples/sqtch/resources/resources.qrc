@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/resources">
+        <file>icon-fill.png</file>
+        <file>icon-fill.svg</file>
+        <file>icon-stroke.png</file>
+        <file>icon-stroke.svg</file>
+        <file>edit-undo.png</file>
+        <file>edit-undo.svg</file>
+    </qresource>
+</RCC>

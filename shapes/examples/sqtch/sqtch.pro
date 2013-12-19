@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = sqtch
-QT += core gui qml quick widgets
+QT += core gui qml quick widgets svg
 
 SOURCES += main.cpp \
     saviour.cpp
@@ -10,7 +10,7 @@ APP_FILES += sqtch.qml
 OTHER_FILES = $$APP_FILES
 
 # Create the resource file
-GENERATED_RESOURCE_FILE = $$OUT_PWD/sqtcher.qrc
+GENERATED_RESOURCE_FILE = $$OUT_PWD/sqtch.qrc
 
 RESOURCE_CONTENT = \
     "<RCC>" \
@@ -29,7 +29,8 @@ RESOURCE_CONTENT += \
 
 write_file($$GENERATED_RESOURCE_FILE, RESOURCE_CONTENT)|error("Aborting.")
 
-RESOURCES += $$GENERATED_RESOURCE_FILE
+RESOURCES += $$GENERATED_RESOURCE_FILE resources/resources.qrc \
+    resources/resources.qrc
 
 HEADERS += \
     saviour.h
