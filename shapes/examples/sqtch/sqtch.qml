@@ -323,23 +323,59 @@ ApplicationWindow {
 
                 anchors.fill: parent
                 property Polygon poly
+                property var pressedOver: false
+                property real pressedX
+                property real pressedY
 
                 onPressed: {
-                    poly = polySketchProto.createObject(canvas,
-                                                        {"x": 0, "y": 0, "width": canvas.width, "height": canvas.height})
-                    poly.triangleSet.beginPathConstruction()
-                    poly.triangleSet.moveTo(stylus.x, stylus.y)
+                    for (var i = 0; i < canvas.children.length && !pressedOver; ++i) {
+                        var coords = canvas.children[i].mapFromItem(canvas, stylus.x, stylus.y);
+//                        console.log("looking at " + canvas.children[i] + " translated stylus coords " + coords.x + "," + coords.y)
+                        if (!canvas.children[i].hasOwnProperty("triangleSet"))
+                            if (coords.x > 0 && coords.x < canvas.children[i].width && coords.y > 0 && coords.y < canvas.children[i].height)
+                                pressedOver = canvas.children[i];
+                    }
+                    pressedX = stylus.x
+                    pressedY = stylus.y
+                    console.log("pressed over " + pressedOver)
+                    if (pressedOver) {
+                        poly = polySketchProto.createObject(canvas,
+                            {"x": 0, "y": 0, z: -10, "width": canvas.width, "height": canvas.height})
+                        poly.triangleSet.beginPathConstruction()
+                        poly.triangleSet.moveTo(pressedX, pressedY)
+                    } else {
+                        poly = polySketchProto.createObject(canvas,
+                            {"x": 0, "y": 0, z: -10, "width": canvas.width, "height": canvas.height})
+                        poly.triangleSet.beginPathConstruction()
+                        poly.triangleSet.moveTo(stylus.x, stylus.y)
+                    }
                 }
                 onDragged: {
-                    poly.triangleSet.lineTo(stylus.x, stylus.y)
-                    // finishPathConstruction is a bit expensive because of stroking, so do it less often
-                    if (poly.triangleSet.pathElementCount < 50 || poly.triangleSet.pathElementCount%10 == 0)
+                    if (pressedOver) {
+                        poly.triangleSet.beginPathConstruction()
+                        poly.triangleSet.moveTo(pressedX, pressedY)
+                        poly.triangleSet.lineTo(stylus.x, stylus.y)
                         poly.triangleSet.finishPathConstruction()
+                    } else {
+                        poly.triangleSet.lineTo(stylus.x, stylus.y)
+                        // finishPathConstruction is a bit expensive because of stroking, so do it less often
+                        if (poly.triangleSet.pathElementCount < 50 || poly.triangleSet.pathElementCount%10 == 0)
+                            poly.triangleSet.finishPathConstruction()
+                    }
                 }
                 onReleased: {
-                    poly.triangleSet.lineTo(stylus.x, stylus.y)
-                    poly.triangleSet.fitCubic()
-                    poly.triangleSet.finishPathConstruction()
+                    console.log("released")
+                    if (pressedOver) {
+                        poly.triangleSet.beginPathConstruction()
+                        poly.triangleSet.moveTo(pressedX, pressedY)
+                        poly.triangleSet.lineTo(stylus.x, stylus.y)
+                        poly.triangleSet.finishPathConstruction()
+                    } else {
+                        poly.triangleSet.lineTo(stylus.x, stylus.y)
+                        poly.triangleSet.fitCubic()
+                        poly.triangleSet.finishPathConstruction()
+                    }
+                    pressedOver = false
                 }
             }
         }
