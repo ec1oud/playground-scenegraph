@@ -1,6 +1,7 @@
 TEMPLATE = app
 TARGET = sqtch
 QT += core gui qml quick widgets svg
+LIBs += -lshapes
 
 SOURCES += main.cpp \
     saviour.cpp \

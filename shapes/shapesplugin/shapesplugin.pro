@@ -28,6 +28,6 @@ qmldir.path = $$[QT_INSTALL_QML]/$$TARGETPATH
 
 INSTALLS = target qmldir
 
-INCLUDEPATH += -I/home/rutledge/src/qwt-6.1/src
-LIBPATH += -L/home/rutledge/src/qwt-6.1/lib
+INCLUDEPATH += ../../../qwt-6.1/src
+LIBPATH += -L../../../qwt-6.1/lib
 LIBS += -lqwt

@@ -52,7 +52,7 @@
 
 #include <private/qtriangulator_p.h>
 
-#include "qwt/qwt_curve_fitter.h"
+#include "qwt_curve_fitter.h"
 
 // #define QSGTRIANGLESET_DEBUG
 
