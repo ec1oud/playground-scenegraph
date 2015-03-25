@@ -2,7 +2,7 @@ TEMPLATE = lib
 TARGET = shapes
 
 QT += quick
-QT += v8-private qml-private quick-private gui-private core-private # to get access to QPainter's triangulator
+QT += qml-private quick-private gui-private core-private # to get access to QPainter's triangulator
 
 CONFIG += qt plugin
 
