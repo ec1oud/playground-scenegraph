@@ -1,2 +1,3 @@
 module Qt.labs.shapes
 plugin shapes
+classname MaskedimagepluginPlugin
