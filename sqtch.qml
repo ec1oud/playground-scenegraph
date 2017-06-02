@@ -3,6 +3,7 @@ import QtQuick.Controls 1.1
 import QtQuick.Layouts 1.1
 import QtQuick.Window 2.1
 import Qt.labs.shapes 1.0
+import Qt.labs.handlers 1.0
 
 ApplicationWindow {
     visible: true
@@ -58,27 +59,37 @@ ApplicationWindow {
                 id: poly
                 color: "black"
                 anchors.fill: parent
-                triangleSet: TriangleSet { }
+                triangleSet: TriangleSet {
+//                    drawingMode: 1 // should be GL_LINES, but crashes
+                }
             }
 
-            MouseHandler {
+            DragHandler {
                 id: handler
 //                acceptedButtons: Qt.AllButtons
 //                acceptedDevices: PointerDevice.Stylus | PointerDevice.Airbrush
-                onPressed: {
-                    console.log("pressed button " + event.button + " @ " + event.scenePos)
-                    poly.triangleSet.beginPathConstruction()
-                    poly.triangleSet.moveTo(event.scenePos.x, event.scenePos.y)
+                property bool polyStarted: false
+                target: null
+                onActiveChanged: {
+                    if (!active) {
+                        console.log("released button(s) " + point.pressedButtons + " @ " + point.scenePosition)
+                        poly.triangleSet.lineTo(point.scenePosition.x, point.scenePosition.y)
+                        poly.triangleSet.finishPathConstruction()
+                        polyStarted = false
+                    }
                 }
-                onUpdated: {
-                    console.log("updated button " + event.button + " @ " + event.scenePos)
-                    poly.triangleSet.lineTo(event.scenePos.x, event.scenePos.y)
-//                    poly.triangleSet.finishPathConstruction()
-                }
-                onReleased: {
-                    console.log("updated button " + event.button + " @ " + event.scenePos)
-                    poly.triangleSet.lineTo(event.scenePos.x, event.scenePos.y)
-                    poly.triangleSet.finishPathConstruction()
+                onPointChanged: {
+                    if (point.pressedButtons) {
+                        if (!polyStarted) { // pressed but not active yet: didn't get past the drag threshold
+                            console.log("pressed button(s) " + point.pressedButtons + " @ " + point.scenePosition)
+                            polyStarted = true
+                            poly.triangleSet.beginPathConstruction()
+                            poly.triangleSet.moveTo(point.scenePosition.x, point.scenePosition.y)
+                        } else {
+                            console.log("updated button(s) " + point.pressedButtons + " @ " + point.scenePosition)
+                            poly.triangleSet.lineTo(point.scenePosition.x, point.scenePosition.y)
+                        }
+                    }
                 }
             }
         }
